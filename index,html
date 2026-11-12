@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>History Jeopardy</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:system-ui,-apple-system,sans-serif;background:#111;color:#fff;display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
+header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#000;border-bottom:3px solid #FC0;flex-wrap:wrap;gap:8px}
+h1{font-size:clamp(1.1rem,3vw,1.6rem);color:#FC0;letter-spacing:1px}
+button{cursor:pointer;font-weight:bold;border-radius:6px;border:none}
+.nav{background:#2d2d3a;color:#fff;padding:7px 11px;font-size:.85rem;border:1px solid #555}
+.wrap{flex:1;display:flex;padding:10px}
+.board{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:auto repeat(5,1fr);gap:8px;width:100%;max-width:1200px;margin:auto}
+.cat,.card{background:#060CE9;display:flex;align-items:center;justify-content:center;text-align:center;border:2px solid #000;border-radius:6px;text-shadow:2px 2px 2px #000}
+.cat{font-weight:800;padding:12px 6px;font-size:clamp(.95rem,2.5vw,1.5rem);text-transform:uppercase}
+.card{color:#FC0;font-weight:900;font-size:clamp(1.25rem,3.6vw,2.2rem);min-height:54px;user-select:none}
+.card.used{background:#040766;color:transparent;text-shadow:none}
+.teams{background:#000;border-top:3px solid #FC0;padding:8px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+.tbox{background:#181824;border:2px solid #060CE9;border-radius:8px;padding:6px 10px;min-width:120px;flex:1 1 130px;max-width:210px;text-align:center}
+.tname{background:none;border:none;border-bottom:1px dashed #666;color:#fff;font-weight:bold;text-align:center;width:100%;font-size:.95rem}
+.tscore{font-size:1.3rem;font-weight:900;color:#FC0;margin:3px 0}
+.tadj button{background:#333;color:#fff;padding:2px 8px;font-size:.8rem;margin:0 2px}
+.modal{position:fixed;inset:0;background:#060CE9;display:none;flex-direction:column;justify-content:space-between;align-items:center;padding:20px;z-index:99;text-align:center;overflow-y:auto}
+.modal.open{display:flex}
+.mtop{width:100%;max-width:900px;display:flex;justify-content:space-between;border-bottom:2px solid rgba(255,255,255,.25);padding-bottom:10px;font-weight:bold;font-size:clamp(1.1rem,2.8vw,1.5rem)}
+.mtop span:first-child{color:#FC0;text-transform:uppercase}
+.mbody{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;max-width:900px;gap:18px;padding:14px 0}
+.clue{font-size:clamp(1.35rem,4vw,2.6rem);font-weight:bold;line-height:1.35;text-shadow:2px 2px 0 #000}
+.ans{font-size:clamp(1.15rem,3vw,2rem);color:#FC0;font-weight:bold;background:rgba(0,0,0,.5);padding:14px 20px;border-radius:8px;border:2px solid #FC0;display:none}
+.ans.show{display:block}
+.dd{background:#FC0;color:#000;font-size:clamp(1.8rem,5vw,3rem);font-weight:900;padding:14px 28px;border-radius:10px}
+.wager{font-size:1.3rem;font-weight:bold;padding:8px;width:140px;text-align:center;border-radius:6px;border:none}
+.sbox{display:none;flex-direction:column;gap:8px;background:rgba(0,0,0,.35);padding:10px;border-radius:8px;width:100%;max-width:850px}
+.sbox.show{display:flex}
+.sbtns{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.sgrp{display:flex;align-items:center;background:#1a1a26;border-radius:6px;overflow:hidden;border:1px solid #555}
+.sgrp span{padding:6px 10px;font-weight:bold;font-size:.9rem}
+.plus{background:#28a745;color:#fff;padding:8px 12px}
+.minus{background:#dc3545;color:#fff;padding:8px 12px}
+.mfoot{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.mfoot button{padding:12px 20px;font-size:1.05rem;min-width:140px}
+.rev{background:#FC0;color:#000}
+.done{background:#333;color:#fff;border:1px solid #666}
+</style>
+</head>
+<body>
+<header>
+  <h1>HISTORY JEOPARDY!</h1>
+  <div style="display:flex;gap:6px">
+    <button class="nav" onclick="modTeams(-1)">- Team</button>
+    <button class="nav" onclick="modTeams(1)">+ Team</button>
+    <button class="nav" onclick="resetAll()">Reset</button>
+  </div>
+</header>
+<div class="wrap"><div class="board" id="board"></div></div>
+<div class="teams" id="teams"></div>
+<div class="modal" id="modal">
+  <div class="mtop"><span id="mcat"></span><span id="mval"></span></div>
+  <div class="mbody">
+    <div id="ddbox" style="display:none;flex-direction:column;align-items:center;gap:14px">
+      <div class="dd">DAILY DOUBLE!</div>
+      <input type="number" id="win" class="wager" value="200" min="50" step="50">
+      <button class="rev" style="padding:10px 20px;font-size:1rem" onclick="startDD()">Show Clue</button>
+    </div>
+    <div class="clue" id="mclue"></div>
+    <div class="ans" id="mans"></div>
+    <div class="sbox" id="sbox">
+      <div style="font-size:.85rem;color:#ddd">AWARD OR DEDUCT <span id="apts"></span> PTS:</div>
+      <div class="sbtns" id="sbtns"></div>
+    </div>
+  </div>
+  <div class="mfoot">
+    <button class="rev" id="revbtn" onclick="showAns()">Show Answer</button>
+    <button class="done" onclick="closeMod()">Back to Board</button>
+  </div>
+</div>
+<script>
+const g=[
+  {c:"King David",q:[
+    {v:100,q:"David defeated this Philistine warrior.",a:"Who is Goliath?"},
+    {v:200,q:"With God's direction, Samuel visited this man in Bethlehem to find Israel's next king.",a:"Who is Jesse?"},
+    {v:300,q:"King Saul became jealous of David because the people did this.",a:"What is cheered more for David?"},
+    {v:400,q:"Out of jealousy, King Saul attempted to do this to David.",a:"What is kill David?"},
+    {v:500,q:"David reigned over Israel for approximately this many years.",a:"What is 40 years?"}
+  ]},
+  {c:"King Solomon",q:[
+    {v:100,q:"After King David died, this son of his became king.",a:"Who is Solomon?"},
+    {v:200,q:"In a dream, God asked Solomon what he wanted, and Solomon asked for this.",a:"What is wisdom?"},
+    {v:300,q:"Solomon carried out this plan of his father David's.",a:"What is build a temple (to worship God)?"},
+    {v:400,q:"This famous queen came to seek out Solomon's wisdom.",a:"Who is the Queen of Sheba?"},
+    {v:500,q:"Before he died, this happened to Solomon's relationship with God.",a:"What is he turned from God and became wicked?"}
+  ]},
+  {c:"Scripture & Dates",q:[
+    {v:100,q:"This is the approximate date of the Later New Kingdom.",a:"What is 1300–1090 B.C.?"},
+    {v:200,q:"The Davidic Kingdom took place during these approximate B.C. dates.",a:"What is 1011–971 B.C.?"},
+    {v:300,q:"The Reign of Solomon took place during these approximate B.C. dates.",a:"What is 971–931 B.C.?"},
+    {v:400,q:"These Old Testament books give the Scripture reference for the Davidic Kingdom.",a:"What are I & II Samuel and I Chronicles?"},
+    {v:500,q:"These Old Testament chapters give the Scripture reference for the Reign of Solomon.",a:"What are I Kings 1–11 and II Chronicles 1–9?"}
+  ]}
+];
+let pts=0,curCard=null,dd={c:1,r:2},teams=[{n:"Team 1",s:0},{n:"Team 2",s:0},{n:"Team 3",s:0}];
+const $=id=>document.getElementById(id);
+function drawTeams(){$("teams").innerHTML=teams.map((t,i)=>`<div class="tbox"><input class="tname" value="${t.n}" onchange="teams[${i}].n=this.value||'Team ${i+1}'"><div class="tscore" style="color:${t.s<0?'#ff6b6b':'#FC0'}">${t.s} pts</div><div class="tadj"><button onclick="teams[${i}].s-=100;drawTeams()">-100</button><button onclick="teams[${i}].s+=100;drawTeams()">+100</button></div></div>`).join("")}
+function modTeams(d){if(teams.length+d<2||teams.length+d>6)return;d>0?teams.push({n:`Team ${teams.length+1}`,s:0}):teams.pop();drawTeams()}
+function drawBoard(){dd={c:Math.floor(Math.random()*3),r:Math.floor(Math.random()*4)+1};const b=$("board");b.innerHTML="";g.forEach(x=>{let d=document.createElement("div");d.className="cat";d.textContent=x.c;b.appendChild(d)});for(let r=0;r<5;r++)for(let c=0;c<3;c++){let item=g[c].q[r],d=document.createElement("div");d.className="card";d.textContent=item.v+" pts";let isDD=(c===dd.c&&r===dd.r);d.onclick=()=>openClue(g[c].c,item,d,isDD);b.appendChild(d)}}
+function openClue(cat,item,el,isDD){if(el.classList.contains("used"))return;curCard=el;pts=item.v;$("mcat").textContent=cat;$("mval").textContent=isDD?"DAILY DOUBLE":pts+" pts";$("mclue").textContent=item.q;$("mans").textContent=item.a;$("mans").classList.remove("show");$("sbox").classList.remove("show");$("ddbox").style.display=isDD?"flex":"none";$("mclue").style.display=isDD?"none":"block";$("revbtn").style.display=isDD?"none":"inline-block";$("win").value=pts;$("modal").classList.add("open")}
+function startDD(){let w=parseInt($("win").value,10);if(w>0)pts=w;$("mval").textContent="Wager: "+pts+" pts";$("ddbox").style.display="none";$("mclue").style.display="block";$("revbtn").style.display="inline-block"}
+function showAns(){$("mans").classList.add("show");$("revbtn").style.display="none";$("apts").textContent=pts;$("sbtns").innerHTML=teams.map((t,i)=>`<div class="sgrp"><span>${t.n}</span><button class="plus" onclick="score(${i},1)">+${pts}</button><button class="minus" onclick="score(${i},-1)">-${pts}</button></div>`).join("");$("sbox").classList.add("show")}
+function score(i,dir){teams[i].s+=dir*pts;drawTeams();if(dir>0)closeMod()}
+function closeMod(){if(curCard)curCard.classList.add("used");$("modal").classList.remove("open");curCard=null}
+function resetAll(){teams.forEach(t=>t.s=0);drawTeams();drawBoard()}
+drawTeams();drawBoard();
+</script>
+</body>
+</html>
